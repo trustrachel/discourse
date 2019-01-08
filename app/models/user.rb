@@ -396,6 +396,11 @@ class User < ActiveRecord::Base
 
   # Approve this user
   def approve(approved_by, send_mail = true)
+    Discourse.deprecate("User#approve is deprecated. Please use the Reviewable API instead.", output_in_test: true)
+
+    # Backwards compatibility - in case plugins or something is using the old API which accepted
+    # either a Number or object. Probably should remove at some point
+    approved_by = User.find_by(id: approved_by) if approved_by.is_a?(Numeric)
 
     ReviewableUser.setup_approval(self, approved_by)
     if result = save
@@ -1199,7 +1204,9 @@ class User < ActiveRecord::Base
   end
 
   def create_reviewable
-    return if !SiteSetting.must_approve_users? || approved?
+    return unless SiteSetting.must_approve_users? || SiteSetting.invite_only?
+    return if approved?
+
     ReviewableUser.create_for(self)
   end
 

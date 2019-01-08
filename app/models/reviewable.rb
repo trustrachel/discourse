@@ -68,6 +68,12 @@ class Reviewable < ActiveRecord::Base
     result
   end
 
+  def self.bulk_perform_targets(performed_by, action, type, target_ids)
+    viewable_by(performed_by).where(type: type, target_id: target_ids).each do |r|
+      r.perform(performed_by, action)
+    end
+  end
+
   def self.viewable_by(user)
     return all if user.admin?
 
@@ -75,12 +81,12 @@ class Reviewable < ActiveRecord::Base
       '(reviewable_by_moderator AND :staff) OR (reviewable_by_group_id IN (:group_ids))',
       staff: user.staff?,
       group_ids: user.group_users.pluck(:group_id)
-    )
+    ).includes(:target)
   end
 
   def self.list_for(user, status: :pending)
     return [] if user.blank?
-    viewable_by(user).where(status: statuses[status]).includes(:target)
+    viewable_by(user).where(status: statuses[status])
   end
 
 end
