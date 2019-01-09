@@ -231,6 +231,8 @@ export default {
       type: "search",
       event
     });
+
+    return false;
   },
 
   toggleHamburgerMenu(event) {
